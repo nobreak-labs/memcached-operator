@@ -1,0 +1,106 @@
+---
+- name: start memcached
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      kind: Deployment
+      apiVersion: apps/v1
+      metadata:
+        name: '{{ ansible_operator_meta.name }}'
+        namespace: '{{ ansible_operator_meta.namespace }}'
+        labels:
+          app.kubernetes.io/name: memcached-operator
+          app.kubernetes.io/instance: '{{ ansible_operator_meta.name }}'
+      spec:
+        replicas: "{{size}}"
+        selector:
+          matchLabels:
+            app.kubernetes.io/name: memcached-operator
+            app.kubernetes.io/instance: '{{ ansible_operator_meta.name }}'
+        template:
+          metadata:
+            labels:
+              app.kubernetes.io/name: memcached-operator
+              app.kubernetes.io/instance: '{{ ansible_operator_meta.name }}'
+          spec:
+            containers:
+            - name: memcached
+              command:
+              - memcached
+              - -o
+              - modern
+              - -v
+              image: "docker.io/memcached:1.6-alpine"
+              ports:
+                - name: memcached
+                  protocol: TCP
+                  containerPort: 11211
+
+- name: start memcached
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      kind: Service
+      apiVersion: v1
+      metadata:
+        name: "{{ ansible_operator_meta.name }}"
+        namespace: "{{ ansible_operator_meta.namespace }}"
+        labels:
+          app.kubernetes.io/name: memcached-operator
+          app.kubernetes.io/instance: '{{ ansible_operator_meta.name }}'
+      spec:
+        type: "{{ service_type }}"
+        selector:
+          app.kubernetes.io/name: memcached-operator
+          app.kubernetes.io/instance: '{{ ansible_operator_meta.name }}'
+        ports:
+          - name: memcached
+            protocol: TCP
+            port: "{{service_port}}"
+            targetPort: 11211
+
+- name: Get memcached pods infos
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Pod
+    namespace: '{{ ansible_operator_meta.namespace }}'
+    label_selectors:
+      - app.kubernetes.io/name=memcached-operator
+  register: pods_info
+
+- name: Set node names list
+  set_fact:
+    node_names: "{{ pods_info.resources | selectattr('status.phase', 'equalto', 'Running') | map(attribute='spec.nodeName') | list }}"
+- debug:
+    msg: "node_names: {{ node_names }}"
+
+- name: Set current size from pod count
+  set_fact:
+    current_size: "{{ pods_info.resources | selectattr('status.phase', 'equalto', 'Running') | list | length }}"
+- debug:
+    msg: "current_size: {{ current_size }}"
+
+- name: Set memcached state
+  set_fact:
+    memcached_state: >-
+      {%- if current_size | int == size | int -%}
+      Green
+      {%- elif current_size | int > 0 -%}
+      Yellow
+      {%- else -%}
+      Red
+      {%- endif -%}
+- debug:
+    msg: "memcached_state: {{ memcached_state }}"
+
+- name: Update memcached status
+  operator_sdk.util.k8s_status:
+    api_version: cache.example.com/v1alpha1
+    kind: Memcached
+    name: "{{ ansible_operator_meta.name }}"
+    namespace: "{{ ansible_operator_meta.namespace }}"
+    force: true
+    status:
+      state: "{{ memcached_state | trim }}"
+      nodes: "{{ node_names }}"
+      current_size: "{{ current_size }}"

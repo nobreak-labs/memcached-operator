@@ -1,0 +1,5 @@
+---
+# defaults file for Memcached
+size: 1
+service_port: 11211
+service_type: ClusterIP

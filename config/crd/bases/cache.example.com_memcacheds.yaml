@@ -1,0 +1,81 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: memcacheds.cache.example.com
+spec:
+  group: cache.example.com
+  names:
+    kind: Memcached
+    listKind: MemcachedList
+    plural: memcacheds
+    singular: memcached
+    shortNames:
+    - mcd
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: Memcached is the Schema for the memcacheds API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: Spec defines the desired state of Memcached
+            type: object
+            properties:
+              size:
+                description: Size is the number of Memcached instances
+                type: integer
+                minimum: 1
+              servicePort:
+                description: Port is the port number of Memcached instances
+                type: integer
+                default: 11211
+              serviceType:
+                description: ServiceType is the type of service to create for Memcached
+                type: string
+                default: ClusterIP
+            required:
+              - size
+          status:
+            description: Status defines the observed state of Memcached
+            type: object
+            properties:
+              state:
+                description: Status of the Memcached instances (Green, Yellow, Red)
+                type: string
+                enum: ["Green", "Yellow", "Red"]
+              nodes:
+                description: List of nodes where Memcached instances are running
+                type: array
+                items:
+                  type: string
+              current_size:
+                description: Current size of the Memcached instances
+                type: string
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+    additionalPrinterColumns:
+    - name: STATE
+      type: string
+      description: The state of the Memcached instances (Green, Yellow, Red)
+      jsonPath: .status.state
+    - name: AGE
+      type: date
+      description: The age of the resource
+      jsonPath: .metadata.creationTimestamp
