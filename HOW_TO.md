@@ -20,10 +20,10 @@ sudo install operator-sdk_${OS}_${ARCH} /usr/local/bin/operator-sdk
 ```
 
 > 참고  
-> 1.31 버전 까지는 Apple Silicon용 Ansible Operator가 빌드되었는데, 왜인지 모르겠지만 1.32 부터 빌드하지 않음  
-> https://github.com/operator-framework/operator-sdk/releases  
-> https://github.com/operator-framework/operator-sdk/releases/tag/v1.31.0  
-> https://github.com/operator-framework/operator-sdk/releases/tag/v1.32.0  
+> 1.31 버전 까지는 Apple Silicon용 Ansible Operator가 빌드되었는데, 1.32 부터 빌드하지 않음
+> - https://github.com/operator-framework/operator-sdk/releases  
+> - https://github.com/operator-framework/operator-sdk/releases/tag/v1.31.0  
+> - https://github.com/operator-framework/operator-sdk/releases/tag/v1.32.0  
 
 ## 2. Ansible Operator 프로젝트 생성 및 구성
 
@@ -34,7 +34,7 @@ mkdir memcached-operator
 cd memcached-operator
 ```
 
-Ansible Operator프로젝트 초기화
+프로젝트 초기화
 
 ```bash
 operator-sdk init --plugins=ansible --domain example.com
@@ -42,9 +42,11 @@ operator-sdk init --plugins=ansible --domain example.com
 
 API 생성
 
-```basg
+```bash
 operator-sdk create api --group cache --version v1alpha1 --kind Memcached --generate-role
 ```
+
+> [프로젝트 레이아웃](https://sdk.operatorframework.io/docs/overview/project-layout/)
 
 `roles/memcached/tasks/main.yml` 파일 수정
 
